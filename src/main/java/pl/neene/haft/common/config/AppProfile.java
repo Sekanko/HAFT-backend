@@ -1,4 +1,4 @@
-package pl.neene.haft.config;
+package pl.neene.haft.common.config;
 
 public interface AppProfile {
     String PROD = "prod";

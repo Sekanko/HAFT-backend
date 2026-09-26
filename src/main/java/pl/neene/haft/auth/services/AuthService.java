@@ -6,9 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.neene.haft.auth.exceptions.UserAlreadyExistsException;
+import pl.neene.haft.auth.exceptions.UserDoesNotExist;
 import pl.neene.haft.auth.model.NeeNeUser;
-import pl.neene.haft.auth.records.RegisterUserRequest;
-import pl.neene.haft.auth.records.RegisterUserResponse;
+import pl.neene.haft.auth.records.*;
 import pl.neene.haft.auth.repositories.NeNeeUserRepository;
 
 @Service
@@ -17,6 +17,8 @@ import pl.neene.haft.auth.repositories.NeNeeUserRepository;
 public class AuthService {
     private final NeNeeUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JWTService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     public RegisterUserResponse register(@Valid RegisterUserRequest request) {
         String email = request.email();
@@ -36,5 +38,36 @@ public class AuthService {
         log.info("User registered: {}", user);
 
         return RegisterUserResponse.SUCCESS;
+    }
+
+    public AuthResult loginUser(LoginUserRequest request) {
+        String email = request.email();
+        String password = request.password();
+
+        NeeNeUser user = userRepository.findByEmail(email).orElseThrow(()-> {
+            log.warn("Login attempt using email: {}, but user does not exist!", email);
+            return new UserDoesNotExist(email);
+        });
+
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            log.warn("Login attempt using email: {}, but password is incorrect!", email);
+            throw new UserDoesNotExist(email);
+        }
+
+        RefreshTokenResult refreshTokenResult = refreshTokenService.generateRefreshToken(user);
+        String accessToken = jwtService.generateJWT(user);
+
+        return new AuthResult(refreshTokenResult.refreshToken(), accessToken, refreshTokenResult.expiresIn());
+    }
+
+    public AuthResult refreshToken(String rawToken){
+        RefreshTokenResult rotationResult = refreshTokenService.refresh(rawToken);
+        String accessToken = jwtService.generateJWT(rotationResult.user());
+        return new AuthResult(rotationResult.refreshToken(), accessToken, rotationResult.expiresIn());
+    }
+
+
+    public void logout(String refreshToken) {
+        refreshTokenService.revokeToken(refreshToken);
     }
 }

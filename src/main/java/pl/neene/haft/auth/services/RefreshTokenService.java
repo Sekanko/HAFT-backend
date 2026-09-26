@@ -12,7 +12,7 @@ import pl.neene.haft.auth.exceptions.RevokedTokenWasUsedException;
 import pl.neene.haft.auth.model.NeeNeUser;
 import pl.neene.haft.auth.model.RefreshToken;
 import pl.neene.haft.auth.model.TokenStatus;
-import pl.neene.haft.auth.records.TokenRotationResult;
+import pl.neene.haft.auth.records.RefreshTokenResult;
 import pl.neene.haft.auth.repositories.RefreshTokenRepository;
 
 import java.nio.charset.StandardCharsets;
@@ -33,7 +33,7 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
 
     @Transactional
-    public String generateRefreshToken(NeeNeUser user) {
+    public RefreshTokenResult generateRefreshToken(NeeNeUser user) {
         SecureRandom random = new SecureRandom();
         byte[] bytes = new byte[32];
         random.nextBytes(bytes);
@@ -48,17 +48,12 @@ public class RefreshTokenService {
 
         refreshTokenRepository.save(token);
 
-        return refreshToken;
+        return new RefreshTokenResult(user, refreshToken, refreshTokenValidity);
     }
 
     @Transactional
-    public TokenRotationResult refresh(String rawToken){
-        String hashedToken = hashRefreshToken(rawToken);
-        RefreshToken refreshToken = refreshTokenRepository.findByToken(hashedToken)
-                .orElseThrow(()-> {
-                    log.warn("Not existing refresh token was used for refreshing: {}", rawToken);
-                    return new RefreshTokenDoesNotExistException("Such refresh token does not exist");
-                });
+    public RefreshTokenResult refresh(String rawToken){
+        RefreshToken refreshToken = findRefreshTokenByTokenOrThrow(rawToken);
 
         NeeNeUser user = refreshToken.getUser();
 
@@ -70,11 +65,18 @@ public class RefreshTokenService {
             tokenExpiredProcedure(refreshToken);
         }
 
-        String newToken = generateRefreshToken(user);
+        RefreshTokenResult result = generateRefreshToken(user);
         refreshToken.setTokenStatus(TokenStatus.REVOKED);
         refreshTokenRepository.save(refreshToken);
 
-        return new TokenRotationResult(user, newToken);
+        return result;
+    }
+
+    public void revokeToken(String refreshToken) {
+        RefreshToken refreshTokenEntity = findRefreshTokenByTokenOrThrow(refreshToken);
+        refreshTokenEntity.setTokenStatus(TokenStatus.REVOKED);
+        refreshTokenRepository.save(refreshTokenEntity);
+        log.info("Refresh token revoked: {}", refreshTokenEntity.getId());
     }
 
     private String hashRefreshToken(String refreshToken) {
@@ -85,6 +87,15 @@ public class RefreshTokenService {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 is somehow not available ",e);
         }
+    }
+
+    private RefreshToken findRefreshTokenByTokenOrThrow(String rawToken){
+        String hashedToken = hashRefreshToken(rawToken);
+        return refreshTokenRepository.findByToken(hashedToken)
+                .orElseThrow(()-> {
+                    log.warn("Not existing refresh token was used for refreshing: {}", rawToken);
+                    return new RefreshTokenDoesNotExistException("Such refresh token does not exist");
+                });
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

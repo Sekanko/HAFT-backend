@@ -71,8 +71,9 @@ public class AuthController {
                 .maxAge(0)
                 .build();
 
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        return ResponseEntity
+                .status(HttpStatus.NO_CONTENT)
+                .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                .build();
     }
-
-
 }

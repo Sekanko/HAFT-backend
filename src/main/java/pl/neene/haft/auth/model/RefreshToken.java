@@ -25,7 +25,8 @@ public class RefreshToken {
     @JoinColumn(name = "neene_user_id")
     private NeeNeUser user;
 
-    @Column(name = "is_revoked")
+    @Column(name = "token_status")
+    @Enumerated(EnumType.STRING)
     private TokenStatus tokenStatus;
 
     @CreationTimestamp

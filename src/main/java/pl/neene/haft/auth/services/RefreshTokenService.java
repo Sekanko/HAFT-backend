@@ -1,11 +1,11 @@
 package pl.neene.haft.auth.services;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import pl.neene.haft.auth.exceptions.RefreshTokenDoesNotExistException;
 import pl.neene.haft.auth.exceptions.RefreshTokenExpiredException;
 import pl.neene.haft.auth.exceptions.RevokedTokenWasUsedException;
@@ -25,12 +25,17 @@ import java.util.Base64;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RefreshTokenService {
+    private final TransactionTemplate transactionTemplate;
     @Value("${app.refresh-token-validity}")
     private Duration refreshTokenValidity;
-
     private final RefreshTokenRepository refreshTokenRepository;
+
+    public RefreshTokenService(TransactionTemplate transactionTemplate, RefreshTokenRepository refreshTokenRepository) {
+        this.transactionTemplate = transactionTemplate;
+        transactionTemplate.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+        this.refreshTokenRepository = refreshTokenRepository;
+    }
 
     @Transactional
     public RefreshTokenResult generateRefreshToken(NeeNeUser user) {
@@ -57,12 +62,23 @@ public class RefreshTokenService {
 
         NeeNeUser user = refreshToken.getUser();
 
+
+
         if (refreshToken.getTokenStatus() == TokenStatus.REVOKED) {
-            revokedRefreshTokenUsedProcedure(user);
+            transactionTemplate.execute(status -> {
+                revokedRefreshTokenUsedProcedure(user);
+                return null;
+            });
+
+            throw new RevokedTokenWasUsedException("Revoked refresh token was used!");
         }
 
         if (refreshToken.getExpiresAt().isBefore(Instant.now())) {
-            tokenExpiredProcedure(refreshToken);
+             transactionTemplate.execute(status -> {
+                tokenExpiredProcedure(refreshToken);
+                return null;
+            });
+            throw new RefreshTokenExpiredException("Refresh token expired");
         }
 
         RefreshTokenResult result = generateRefreshToken(user);
@@ -93,7 +109,7 @@ public class RefreshTokenService {
         String hashedToken = hashRefreshToken(rawToken);
         return refreshTokenRepository.findByToken(hashedToken)
                 .orElseThrow(()-> {
-                    log.warn("Not existing refresh token was used for refreshing: {}", rawToken);
+                    log.warn("Not existing refresh token was used: {}", rawToken);
                     return new RefreshTokenDoesNotExistException("Such refresh token does not exist");
                 });
     }
@@ -103,14 +119,11 @@ public class RefreshTokenService {
         log.warn("Revoked refresh token was used! Revoking all tokens for user: {}", user.getId());
         int i = refreshTokenRepository.setRevokedByUser(user);
         log.warn("Revoked tokens count: {}", i);
-        throw new RevokedTokenWasUsedException("Revoked refresh token was used!");
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     protected void tokenExpiredProcedure(RefreshToken refreshToken){
         refreshToken.setTokenStatus(TokenStatus.REVOKED);
         refreshTokenRepository.save(refreshToken);
         log.info("Refresh token expired: {}", refreshToken.getId());
-        throw new RefreshTokenExpiredException("Refresh token expired");
     }
 }

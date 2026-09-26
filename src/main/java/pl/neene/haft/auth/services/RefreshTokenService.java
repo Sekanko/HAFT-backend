@@ -27,7 +27,7 @@ import java.util.Base64;
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
-    @Value("${app.jwt.refresh-token-validity}")
+    @Value("${app.refresh-token-validity}")
     private Duration refreshTokenValidity;
 
     private final RefreshTokenRepository refreshTokenRepository;

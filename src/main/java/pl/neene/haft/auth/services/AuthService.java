@@ -25,7 +25,7 @@ public class AuthService {
         
         if (userRepository.existsByEmail(email)) {
             log.warn("Registration attempt using email: {}, but user already exists!", email);
-            throw new UserAlreadyExistsException(email);
+            throw new UserAlreadyExistsException();
         }
 
         NeeNeUser user = new NeeNeUser();

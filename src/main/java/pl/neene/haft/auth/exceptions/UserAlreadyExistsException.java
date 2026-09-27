@@ -1,9 +1,9 @@
 package pl.neene.haft.auth.exceptions;
 
-import pl.neene.haft.common.exceptions.BadRequestException;
+import pl.neene.haft.common.exceptions.ConflictException;
 
-public class UserAlreadyExistsException extends BadRequestException {
-    public UserAlreadyExistsException(String email){
-        super("User with this email already exists:" + email);
+public class UserAlreadyExistsException extends ConflictException {
+    public UserAlreadyExistsException(){
+        super("User with this email already exists");
     }
 }

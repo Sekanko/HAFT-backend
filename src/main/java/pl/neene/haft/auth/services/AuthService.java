@@ -9,15 +9,15 @@ import pl.neene.haft.auth.exceptions.UserAlreadyExistsException;
 import pl.neene.haft.auth.exceptions.UserDoesNotExist;
 import pl.neene.haft.auth.model.NeeNeUser;
 import pl.neene.haft.auth.records.*;
-import pl.neene.haft.auth.repositories.NeNeeUserRepository;
+import pl.neene.haft.auth.repositories.NeeNeUserRepository;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AuthService {
-    private final NeNeeUserRepository userRepository;
+    private final NeeNeUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JWTService jwtService;
+    private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
 
     public RegisterUserResponse register(@Valid RegisterUserRequest request) {

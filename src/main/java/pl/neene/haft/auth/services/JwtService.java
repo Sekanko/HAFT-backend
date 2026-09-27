@@ -3,6 +3,8 @@ package pl.neene.haft.auth.services;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import pl.neene.haft.auth.model.NeeNeUser;
@@ -15,7 +17,8 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
-public class JWTService {
+
+public class JwtService {
     @Value("${jwt.issuer}")
     private String issuer;
 
@@ -27,7 +30,7 @@ public class JWTService {
 
     private final SecretKey signingKey;
 
-    public JWTService(@Value("${jwt.secret}") String secret) {
+    public JwtService(@Value("${jwt.secret}") String secret) {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes());
     }
 

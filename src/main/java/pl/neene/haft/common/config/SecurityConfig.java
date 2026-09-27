@@ -11,12 +11,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import pl.neene.haft.auth.services.JWTFilter;
+import pl.neene.haft.auth.services.JwtFilter;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final JWTFilter jwtFilter;
+    private final JwtFilter jwtFilter;
 
     @Bean
     public SecurityFilterChain apiAuthenticationFilterChain(HttpSecurity http) throws Exception {

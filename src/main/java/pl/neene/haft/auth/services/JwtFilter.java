@@ -22,8 +22,8 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class JWTFilter extends OncePerRequestFilter {
-    private final JWTService jwtService;
+public class JwtFilter extends OncePerRequestFilter {
+    private final JwtService jwtService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {

@@ -29,12 +29,17 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (header == null || header.isBlank() || !header.startsWith("Bearer ")) {
+        if (header == null || !header.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = header.substring(7);
+
+        if (token.isBlank()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         try {
             Claims claims = jwtService.extractClaims(token);

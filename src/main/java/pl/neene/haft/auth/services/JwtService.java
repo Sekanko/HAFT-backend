@@ -19,19 +19,21 @@ import java.util.UUID;
 @Service
 
 public class JwtService {
-    @Value("${jwt.issuer}")
-    private String issuer;
-
-    @Value("${jwt.audience}")
-    private String audience;
-
-    @Value("${jwt.expiration-time}")
-    private Duration expirationTime;
-
+    private final String issuer;
+    private final String audience;
+    private final Duration expirationTime;
     private final SecretKey signingKey;
 
-    public JwtService(@Value("${jwt.secret}") String secret) {
+    public JwtService(
+            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.expiration-time}") Duration expirationTime,
+            @Value("${jwt.audience}") String audience,
+            @Value("${jwt.issuer}") String issuer
+    ) {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes());
+        this.expirationTime = expirationTime;
+        this.audience = audience;
+        this.issuer = issuer;
     }
 
     public String generateJWT(NeeNeUser user){

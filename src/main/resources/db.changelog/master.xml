@@ -6,4 +6,5 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
     <include file="/db.changelog/changes/001-create-user-table.sql"/>
     <include file="/db.changelog/changes/002-create-refresh-token-table.sql"/>
+    <include file="db.changelog/changes/003-create-cross-stitch-pattern-and-thread-palette-table.sql"/>
 </databaseChangeLog>

@@ -3,6 +3,8 @@ package pl.neene.haft.auth.services;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import pl.neene.haft.auth.model.NeeNeUser;
@@ -15,20 +17,23 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
-public class JWTService {
-    @Value("${jwt.issuer}")
-    private String issuer;
 
-    @Value("${jwt.audience}")
-    private String audience;
-
-    @Value("${jwt.expiration-time}")
-    private Duration expirationTime;
-
+public class JwtService {
+    private final String issuer;
+    private final String audience;
+    private final Duration expirationTime;
     private final SecretKey signingKey;
 
-    public JWTService(@Value("${jwt.secret}") String secret) {
+    public JwtService(
+            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.expiration-time}") Duration expirationTime,
+            @Value("${jwt.audience}") String audience,
+            @Value("${jwt.issuer}") String issuer
+    ) {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes());
+        this.expirationTime = expirationTime;
+        this.audience = audience;
+        this.issuer = issuer;
     }
 
     public String generateJWT(NeeNeUser user){

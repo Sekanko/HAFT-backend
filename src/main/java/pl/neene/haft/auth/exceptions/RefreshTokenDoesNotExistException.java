@@ -1,6 +1,8 @@
 package pl.neene.haft.auth.exceptions;
 
-public class RefreshTokenDoesNotExistException extends RuntimeException {
+import pl.neene.haft.common.exceptions.UnauthorizedException;
+
+public class RefreshTokenDoesNotExistException extends UnauthorizedException {
     public RefreshTokenDoesNotExistException(String message) {
         super(message);
     }

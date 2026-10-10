@@ -27,12 +27,16 @@ import java.util.Base64;
 @Service
 public class RefreshTokenService {
     private final TransactionTemplate transactionTemplate;
-    @Value("${app.refresh-token-validity}")
-    private Duration refreshTokenValidity;
+    private final Duration refreshTokenValidity;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    public RefreshTokenService(TransactionTemplate transactionTemplate, RefreshTokenRepository refreshTokenRepository) {
+    public RefreshTokenService(
+            TransactionTemplate transactionTemplate,
+            @Value("${app.refresh-token-validity}") Duration refreshTokenValidity,
+            RefreshTokenRepository refreshTokenRepository
+    ) {
         this.transactionTemplate = transactionTemplate;
+        this.refreshTokenValidity = refreshTokenValidity;
         transactionTemplate.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
         this.refreshTokenRepository = refreshTokenRepository;
     }
@@ -58,11 +62,9 @@ public class RefreshTokenService {
 
     @Transactional
     public RefreshTokenResult refresh(String rawToken){
-        RefreshToken refreshToken = findRefreshTokenByTokenOrThrow(rawToken);
+            RefreshToken refreshToken = findRefreshTokenByTokenOrThrow(rawToken);
 
         NeeNeUser user = refreshToken.getUser();
-
-
 
         if (refreshToken.getTokenStatus() == TokenStatus.REVOKED) {
             transactionTemplate.execute(status -> {

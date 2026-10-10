@@ -1,0 +1,92 @@
+name: neene-storage
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: local-haft
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d local-haft"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  seaweedfs:
+    image: chrislusf/seaweedfs
+    command: mini -dir=/data
+    environment:
+      AWS_ACCESS_KEY_ID: your-access-key
+      AWS_SECRET_ACCESS_KEY: your-secret-key
+    ports:
+      - "127.0.0.1:8333:8333"
+      - "127.0.0.1:23646:23646"
+    volumes:
+      - seaweed-data:/data
+
+  seaweedfs-init:
+    image: amazon/aws-cli
+    depends_on:
+      - seaweedfs
+    restart: "no"
+    environment:
+      AWS_ACCESS_KEY_ID: your-access-key
+      AWS_SECRET_ACCESS_KEY: your-secret-key
+      AWS_DEFAULT_REGION: eu-central-1
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        EP=http://seaweedfs:8333
+        until aws --endpoint-url $$EP s3api list-buckets > /dev/null 2>&1; do
+          echo "Waiting for SeaweedFS..."; sleep 3
+        done
+        
+        aws --endpoint-url $$EP s3api create-bucket --bucket public.bucket  || true
+        aws --endpoint-url $$EP s3api create-bucket --bucket private.bucket || true
+
+        cat > /tmp/public.json <<EOF
+        {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::public.bucket/*"
+          }]
+        }
+        EOF
+
+        cat > /tmp/private.json <<EOF
+        {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": { "AWS": "$$AWS_ACCESS_KEY_ID" },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::private.bucket/*"
+          }]
+        }
+        EOF
+        
+        aws --endpoint-url $$EP s3api put-bucket-policy --bucket public.bucket  --policy file:///tmp/public.json
+        aws --endpoint-url $$EP s3api put-bucket-policy --bucket private.bucket --policy file:///tmp/private.json
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - seaweedfs
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/local-haft
+
+volumes:
+  postgres_data:
+  seaweed-data:

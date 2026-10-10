@@ -18,7 +18,7 @@ services:
       retries: 10
 
   seaweedfs:
-    image: chrislusf/seaweedfs
+    image: chrislusf/seaweedfs:4.48
     command: mini -dir=/data
     environment:
       AWS_ACCESS_KEY_ID: your-access-key
@@ -31,61 +31,34 @@ services:
 
   seaweedfs-init:
     image: amazon/aws-cli
+    restart: "no"
     depends_on:
       - seaweedfs
-    restart: "no"
     environment:
       AWS_ACCESS_KEY_ID: your-access-key
       AWS_SECRET_ACCESS_KEY: your-secret-key
       AWS_DEFAULT_REGION: eu-central-1
-    entrypoint: [ "/bin/sh", "-c" ]
-    command:
-      - |
-        EP=http://seaweedfs:8333
-        until aws --endpoint-url $$EP s3api list-buckets > /dev/null 2>&1; do
-          echo "Waiting for SeaweedFS..."; sleep 3
-        done
-        
-        aws --endpoint-url $$EP s3api create-bucket --bucket public.bucket  || true
-        aws --endpoint-url $$EP s3api create-bucket --bucket private.bucket || true
-
-        cat > /tmp/public.json <<EOF
-        {
-          "Version": "2012-10-17",
-          "Statement": [{
-            "Effect": "Allow",
-            "Principal": "*",
-            "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::public.bucket/*"
-          }]
-        }
-        EOF
-
-        cat > /tmp/private.json <<EOF
-        {
-          "Version": "2012-10-17",
-          "Statement": [{
-            "Effect": "Allow",
-            "Principal": { "AWS": "$$AWS_ACCESS_KEY_ID" },
-            "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::private.bucket/*"
-          }]
-        }
-        EOF
-        
-        aws --endpoint-url $$EP s3api put-bucket-policy --bucket public.bucket  --policy file:///tmp/public.json
-        aws --endpoint-url $$EP s3api put-bucket-policy --bucket private.bucket --policy file:///tmp/private.json
+      PUBLIC_BUCKET: public.bucket
+      PRIVATE_BUCKET: private.bucket
+      S3_ENDPOINT: http://seaweedfs:8333
+    volumes:
+      - ./infrastructure/seaweedfs:/init:ro
+    entrypoint: [ "/bin/sh", "/init/init.sh" ]
 
   app:
     build: .
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
-      - seaweedfs
+      postgres:
+        condition: service_healthy
+      seaweedfs-init:
+        condition: service_completed_successfully
     environment:
       SPRING_PROFILES_ACTIVE: local
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/local-haft
+      S3_API_ENDPOINT: http://seaweedfs:8333
+      S3_PUBLIC_ENDPOINT: http://127.0.0.1:8333
 
 volumes:
   postgres_data:

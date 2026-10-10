@@ -1,5 +1,6 @@
 package pl.neene.haft.embroideryStorage.services;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ import java.time.Duration;
 public class S3Service {
     private final String publicGalleryBucketName;
     private final String privateGalleryBucketName;
-    private final String apiEndpoint;
+    private final String s3PublicEndpoint;
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
 
@@ -31,10 +32,11 @@ public class S3Service {
     public S3Service(
             @Value("${s3.accessKey}") String accessKey,
             @Value("${s3.secretKey}") String secretKey,
-            @Value("${s3.galleryBucket.public}") String publicGalleryBucketName,
-            @Value("${s3.galleryBucket.private}") String privateGalleryBucketName,
+            @Value("${s3.publicBucket.public}") String publicGalleryBucketName,
+            @Value("${s3.privateBucket.private}") String privateGalleryBucketName,
             @Value("${s3.api.endpoint}") String apiEndpoint,
-            @Value("${s3.region}") String region
+            @Value("${s3.region}") String region,
+            @Value("${s3.public.endpoint}") String s3PublicEndpoint
             ) {
         AwsBasicCredentials awsBasicCredentials = AwsBasicCredentials.create(accessKey, secretKey);
         StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(awsBasicCredentials);
@@ -50,20 +52,20 @@ public class S3Service {
                 .build();
 
         S3Presigner s3Presigner = S3Presigner.builder()
-                .endpointOverride(URI.create(apiEndpoint))
+                .endpointOverride(URI.create(s3PublicEndpoint))
                 .credentialsProvider(credentialsProvider)
                 .serviceConfiguration(configuration)
                 .region(Region.of(region))
                 .build();
 
-        this(publicGalleryBucketName, privateGalleryBucketName, apiEndpoint, s3Client, s3Presigner);
+        this(publicGalleryBucketName, privateGalleryBucketName, s3PublicEndpoint, s3Client, s3Presigner);
     }
 
-    public S3Service(String publicGalleryBucketName, String privateGalleryBucketName, String apiEndpoint, S3Client s3Client, S3Presigner s3Presigner) {
+    public S3Service(String publicGalleryBucketName, String privateGalleryBucketName, String s3PublicEndpoint, S3Client s3Client, S3Presigner s3Presigner) {
           this.publicGalleryBucketName = publicGalleryBucketName;
           this.privateGalleryBucketName = privateGalleryBucketName;
           this.s3Client = s3Client;
-          this.apiEndpoint = apiEndpoint;
+          this.s3PublicEndpoint = s3PublicEndpoint;
           this.s3Presigner = s3Presigner;
     }
 
@@ -89,7 +91,7 @@ public class S3Service {
 
     public String generateUrl(String key, boolean isPublic){
         if(isPublic){
-            return apiEndpoint + "/" + publicGalleryBucketName + "/" + key;
+            return s3PublicEndpoint + "/" + publicGalleryBucketName + "/" + key;
         }
 
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()

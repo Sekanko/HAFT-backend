@@ -1,0 +1,91 @@
+name: neene-storage-prod
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:?}
+      POSTGRES_USER: ${DB_USER:?}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    restart: unless-stopped
+    command: mini -dir=/data
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:?}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:?}
+    volumes:
+      - seaweed-data:/data
+    networks:
+      default:
+      edge:
+        aliases: [ storage ]
+
+  seaweedfs-init:
+    image: amazon/aws-cli
+    restart: "no"
+    depends_on:
+      - seaweedfs
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:?}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:?}
+      AWS_DEFAULT_REGION: ${S3_REGION:?}
+      PUBLIC_BUCKET: ${PUBLIC_BUCKET:?}
+      PRIVATE_BUCKET: ${PRIVATE_BUCKET:?}
+      S3_ENDPOINT: http://seaweedfs:8333
+    volumes:
+      - ./infrastructure/seaweedfs:/init:ro
+    entrypoint: [ "/bin/sh", "/init/init.sh" ]
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seaweedfs-init:
+        condition: service_completed_successfully
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:?}
+      DB_USERNAME: ${DB_USER:?}
+      DB_PASSWORD: ${DB_PASSWORD:?}
+
+      REFRESH_TOKEN_VAL: ${REFRESH_TOKEN_VAL:-30d}
+      JWT_EXPIRATION_TIME: ${JWT_EXPIRATION_TIME:-15m}
+      APP_ISSUER: ${APP_ISSUER:?}
+      APP_AUDIENCE: ${APP_AUDIENCE:?}
+      JWT_SECRET: ${JWT_SECRET:?}
+
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?}
+      S3_PUBLIC_BUCKET: ${PUBLIC_BUCKET:?}
+      S3_PRIVATE_BUCKET: ${PRIVATE_BUCKET:?}
+      S3_API_ENDPOINT: http://seaweedfs:8333
+      S3_REGION: ${S3_REGION}
+      S3_PUBLIC_ENDPOINT: https://${FILES_DOMAIN:?}
+
+    networks:
+      default:
+      edge:
+        aliases: [ api ]
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  postgres_data:
+  seaweed-data:

@@ -2,6 +2,7 @@ package pl.neene.haft.embroideryStorage.services;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import pl.neene.haft.auth.model.NeeNeUser;
 import pl.neene.haft.auth.repositories.NeeNeUserRepository;
@@ -9,6 +10,8 @@ import pl.neene.haft.embroideryStorage.exceptions.CrossStitchPatternNotFoundExce
 import pl.neene.haft.embroideryStorage.model.CrossStitchPattern;
 import pl.neene.haft.embroideryStorage.records.*;
 import pl.neene.haft.embroideryStorage.repositories.CrossStitchPatternRepository;
+
+import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -95,6 +98,17 @@ public class CrossStitchPatternService {
                 pattern.getCanvasDensity(),
                 urls
         );
+    }
+
+    public Page<BasicPatternInfo> getPattersPage(Pageable pageable) {
+        return crossStitchPatternRepository
+                .findAllPublicPatterns(pageable)
+                .map(entity -> {
+                    NeeNeUser creator = entity.getCreator();
+                    String fullName =  creator.getFirstName() + " " + creator.getLastName();
+
+                    return new BasicPatternInfo(entity.getId(), entity.getTitle(), fullName, s3Service.generateUrl(entity.getPatternKey(), true));
+                });
     }
 
     private void callS3ServiceMethodTwice(BiConsumer<String, Boolean> method, CrossStitchPattern pattern){

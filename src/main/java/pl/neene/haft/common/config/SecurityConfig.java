@@ -19,10 +19,11 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
 
     @Bean
-    public SecurityFilterChain apiAuthenticationFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain apiAuthenticationFilterChain(HttpSecurity http) {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/patterns").permitAll()
                         .requestMatchers("/api/patterns/**").authenticated()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()

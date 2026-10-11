@@ -2,6 +2,7 @@ package pl.neene.haft.embroideryStorage.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +13,10 @@ import org.springframework.web.multipart.MultipartFile;
 import pl.neene.haft.embroideryStorage.records.*;
 import pl.neene.haft.embroideryStorage.services.CrossStitchPatternService;
 
+import org.springframework.data.domain.Pageable;
+
 import java.io.IOException;
+
 import java.util.UUID;
 
 @Slf4j
@@ -62,5 +66,11 @@ public class CrossStitchPatternController {
         CrossStitchPatternResponse result = crossStitchPatternService.getPattern(patternId, userId);
         return ResponseEntity.status(HttpStatus.OK).body(result);
 
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<BasicPatternInfo>> getAllPublicPatterns(Pageable pageable){
+        Page<BasicPatternInfo> patterns = crossStitchPatternService.getPattersPage(pageable);
+        return ResponseEntity.status(HttpStatus.OK).body(patterns);
     }
 }

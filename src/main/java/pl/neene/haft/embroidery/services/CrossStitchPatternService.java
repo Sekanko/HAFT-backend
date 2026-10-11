@@ -7,12 +7,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import pl.neene.haft.auth.model.NeeNeUser;
 import pl.neene.haft.auth.repositories.NeeNeUserRepository;
+import pl.neene.haft.common.enums.Visibility;
 import pl.neene.haft.common.services.S3Service;
 import pl.neene.haft.embroidery.exceptions.CrossStitchPatternNotFoundException;
 import pl.neene.haft.embroidery.model.CrossStitchPattern;
 import pl.neene.haft.embroidery.records.*;
 import pl.neene.haft.embroidery.repositories.CrossStitchPatternRepository;
 
+import java.util.Locale;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
@@ -29,7 +31,7 @@ public class CrossStitchPatternService {
         String thumbnailKey = "thumbnails/" + key + ".json";
         String patternKey = "patterns/" + key + ".png";
 
-        boolean isPublic = request.isPublic();
+        boolean isPublic = request.visibility().isPublic();
         try {
             s3Service.store(thumbnail, thumbnailKey, isPublic);
             s3Service.store(patternImg, patternKey, isPublic);
@@ -45,7 +47,7 @@ public class CrossStitchPatternService {
         CrossStitchPattern newPattern = new CrossStitchPattern()
                 .setCreator(owner)
                 .setTitle(request.title())
-                .setPublic(isPublic)
+                .setVisibility(request.visibility())
                 .setCanvasDensity(request.canvasDensity())
                 .setCanvasWidth(request.canvasWidth())
                 .setCanvasHeight(request.canvasHeight())
@@ -61,19 +63,20 @@ public class CrossStitchPatternService {
     public ChangePatternVisibilityResponse changePatternVisibility(UUID patternId, ChangePatternVisibilityRequest request, UUID userId){
         CrossStitchPattern pattern = getPatternOrThrow(patternId, userId);
 
-        boolean isPublic = request.isPublic();
+        Visibility visibility = request.visibility();
+        String visibilityStr = visibility.toString().toLowerCase(Locale.ROOT);
 
-        if(pattern.isPublic() == isPublic){
-            return new ChangePatternVisibilityResponse("Pattern is already " + (isPublic ? "public" : "private"));
+        if(pattern.getVisibility() == visibility){
+            return new ChangePatternVisibilityResponse("Pattern is already " + visibilityStr);
         }
         callS3ServiceMethodTwice(s3Service::moveObject, pattern, s3Service::moveObject);
-        pattern.setPublic(isPublic);
+        pattern.setVisibility(visibility);
 
         crossStitchPatternRepository.save(pattern);
 
         log.info("Pattern visibility changed: {}", patternId);
 
-        return new ChangePatternVisibilityResponse("Visibility changed to" + (isPublic ? " public" : " private"));
+        return new ChangePatternVisibilityResponse("Visibility changed to " + visibilityStr);
     }
 
     public DeletePatternResponse deletePattern(UUID patternId, UUID userId){
@@ -92,7 +95,7 @@ public class CrossStitchPatternService {
         return new CrossStitchPatternResponse(
                 patternId,
                 pattern.getTitle(),
-                pattern.isPublic(),
+                pattern.getVisibility(),
                 pattern.getCanvasHeight(),
                 pattern.getCanvasWidth(),
                 pattern.getCanvasDensity(),
@@ -107,7 +110,7 @@ public class CrossStitchPatternService {
                     NeeNeUser creator = entity.getCreator();
                     String fullName =  creator.getFirstName() + " " + creator.getLastName();
 
-                    return new BasicPatternInfo(entity.getId(), entity.getTitle(), fullName, s3Service.generateUrl(entity.getPatternKey(), true));
+                    return new BasicPatternInfo(entity.getId(), entity.getTitle(), fullName, s3Service.generateUrl(entity.getPatternKey(), Visibility.PUBLIC.isPublic()));
                 });
     }
 
@@ -116,7 +119,7 @@ public class CrossStitchPatternService {
     }
 
     private void callS3ServiceMethodTwice(BiConsumer<String, Boolean> method, CrossStitchPattern pattern, BiConsumer<String, Boolean> exceptionMethod){
-        boolean isPublic = pattern.isPublic();
+        boolean isPublic = pattern.getVisibility().isPublic();
         String key1 = pattern.getThumbnailKey();
         String key2 = pattern.getPatternKey();
 
@@ -131,8 +134,7 @@ public class CrossStitchPatternService {
     }
 
     private ObjectS3Url getObjectUrl(CrossStitchPattern pattern){
-        boolean isPublic = pattern.isPublic();
-
+        boolean isPublic = pattern.getVisibility().isPublic();
         String thumbnailUrl = s3Service.generateUrl(pattern.getThumbnailKey(), isPublic);
         String patternUrl = s3Service.generateUrl(pattern.getPatternKey(), isPublic);
 

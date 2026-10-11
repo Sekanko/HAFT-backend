@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import pl.neene.haft.common.enums.Visibility;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -46,4 +47,8 @@ public class NeeNeUser {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "profile_visibility", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Visibility visibility;
 }

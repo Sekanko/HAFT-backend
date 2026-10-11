@@ -8,6 +8,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import pl.neene.haft.auth.model.NeeNeUser;
+import pl.neene.haft.common.enums.Visibility;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -30,8 +31,9 @@ public class CrossStitchPattern {
     @Column(nullable = false, length = 255)
     private String title;
 
-    @Column(name = "is_public", nullable = false)
-    private boolean isPublic;
+    @Column(name = "visibility", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Visibility visibility;
 
     @Column(name = "canvas_width", nullable = false)
     private int canvasWidth;

@@ -16,7 +16,7 @@ public interface CrossStitchPatternRepository extends JpaRepository<CrossStitchP
         SELECT csp 
         FROM CrossStitchPattern csp 
         JOIN FETCH csp.creator 
-        WHERE csp.isPublic = true 
+        WHERE csp.visibility = Visibility.PUBLIC 
     """)
     Page<CrossStitchPattern> findAllPublicPatterns(Pageable pageable);
 }

@@ -10,6 +10,7 @@ import pl.neene.haft.auth.exceptions.UserDoesNotExist;
 import pl.neene.haft.auth.model.NeeNeUser;
 import pl.neene.haft.auth.records.*;
 import pl.neene.haft.auth.repositories.NeeNeUserRepository;
+import pl.neene.haft.common.enums.Visibility;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +34,7 @@ public class AuthService {
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setVisibility(Visibility.PUBLIC);
         userRepository.save(user);
 
         log.info("User registered: {}", user);

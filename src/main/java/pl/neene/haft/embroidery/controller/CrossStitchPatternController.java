@@ -1,5 +1,6 @@
 package pl.neene.haft.embroidery.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,7 +26,7 @@ public class CrossStitchPatternController {
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CreatePatternResponse> createPattern(
-            @RequestPart("metadata") CreatePatternRequest metadata,
+            @RequestPart("metadata") @Valid CreatePatternRequest metadata,
             @RequestPart("pattern") MultipartFile pattern,
             @RequestPart("thumbnail") MultipartFile thumbnail,
             @AuthenticationPrincipal UUID userId

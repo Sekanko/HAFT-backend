@@ -5,7 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import pl.neene.haft.auth.model.NeeNeUser;
 import pl.neene.haft.auth.repositories.NeeNeUserRepository;
-import pl.neene.haft.common.exceptions.ConflictException;
+import pl.neene.haft.users.exceptions.FriendshipAlreadyAcceptedException;
+import pl.neene.haft.users.exceptions.FriendshipAlreadyExistsException;
+import pl.neene.haft.users.exceptions.FriendshipNotFoundException;
+import pl.neene.haft.users.exceptions.FriendshipWithUsersDoesNotExistException;
 import pl.neene.haft.users.model.Friendship;
 import pl.neene.haft.users.model.FriendshipStatus;
 import pl.neene.haft.users.records.AddFriendRequest;
@@ -25,6 +28,12 @@ public class FriendshipService {
     public AddFriendResponse createFriendRequest(AddFriendRequest addFriendRequest, UUID senderId) {
         UUID receiverId = addFriendRequest.receiverId();
 
+        boolean test = friendshipRepository.existsBySenderIdAndReceiverId(senderId, receiverId);
+
+        if (test) {
+            throw new FriendshipAlreadyExistsException("Friendship already exists");
+        }
+
         NeeNeUser sender =  neeNeUserRepository.getReferenceById(senderId);
         NeeNeUser receiver = neeNeUserRepository.getReferenceById(receiverId);
 
@@ -40,11 +49,11 @@ public class FriendshipService {
     public FriendAcceptedResponse acceptFriendRequest(UUID receiverId, UUID friendshipId) {
         Friendship friendshipRequest = friendshipRepository.findByIdAndReceiverId(friendshipId, receiverId).orElseThrow(() -> {
             log.warn("Someone tried to accept friendship request {} with receiver {}", friendshipId, receiverId);
-            return new RuntimeException("Someone tried to accept friendship request ");
+            return new FriendshipWithUsersDoesNotExistException("Someone unauthorized tried to accept friendship request ");
         });
 
         if (friendshipRequest.getStatus() != FriendshipStatus.PENDING) {
-            throw new ConflictException("Friendship request already accepted");
+            throw new FriendshipAlreadyAcceptedException("Friendship request already accepted");
         }
 
         friendshipRequest.setStatus(FriendshipStatus.ACCEPTED);
@@ -55,8 +64,8 @@ public class FriendshipService {
 
     public void deleteFriendship(UUID userId, UUID friendshipId) {
         Friendship friendship = friendshipRepository.findByIdAndUser(friendshipId, userId).orElseThrow( () -> {
-            log.warn("Someone tried to delete friendship request {} with receiver {}", friendshipId, userId);
-            return new RuntimeException("Someone tried to delete friendship request");
+            log.warn("Someone tried to delete friendship that doesn't exist with request {} and receiver {}", friendshipId, userId);
+            return new FriendshipNotFoundException("Friendship with provided data doesn't exist");
         });
 
         friendshipRepository.delete(friendship);

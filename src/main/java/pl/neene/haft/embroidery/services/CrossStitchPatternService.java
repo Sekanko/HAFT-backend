@@ -1,4 +1,4 @@
-package pl.neene.haft.embroideryStorage.services;
+package pl.neene.haft.embroidery.services;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,10 +6,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import pl.neene.haft.auth.model.NeeNeUser;
 import pl.neene.haft.auth.repositories.NeeNeUserRepository;
-import pl.neene.haft.embroideryStorage.exceptions.CrossStitchPatternNotFoundException;
-import pl.neene.haft.embroideryStorage.model.CrossStitchPattern;
-import pl.neene.haft.embroideryStorage.records.*;
-import pl.neene.haft.embroideryStorage.repositories.CrossStitchPatternRepository;
+import pl.neene.haft.common.services.S3Service;
+import pl.neene.haft.embroidery.exceptions.CrossStitchPatternNotFoundException;
+import pl.neene.haft.embroidery.model.CrossStitchPattern;
+import pl.neene.haft.embroidery.records.*;
+import pl.neene.haft.embroidery.repositories.CrossStitchPatternRepository;
 
 import org.springframework.data.domain.Pageable;
 

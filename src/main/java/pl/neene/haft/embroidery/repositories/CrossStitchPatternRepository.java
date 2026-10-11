@@ -1,10 +1,10 @@
-package pl.neene.haft.embroideryStorage.repositories;
+package pl.neene.haft.embroidery.repositories;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import pl.neene.haft.embroideryStorage.model.CrossStitchPattern;
+import pl.neene.haft.embroidery.model.CrossStitchPattern;
 
 import java.util.Optional;
 import java.util.UUID;

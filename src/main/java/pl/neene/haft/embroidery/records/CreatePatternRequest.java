@@ -1,4 +1,4 @@
-package pl.neene.haft.embroideryStorage.records;
+package pl.neene.haft.embroidery.records;
 
 public record CreatePatternRequest(
         String title,

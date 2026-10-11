@@ -1,4 +1,4 @@
-package pl.neene.haft.embroideryStorage.controller;
+package pl.neene.haft.embroidery.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +10,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import pl.neene.haft.embroideryStorage.records.*;
-import pl.neene.haft.embroideryStorage.services.CrossStitchPatternService;
+import pl.neene.haft.embroidery.records.*;
+import pl.neene.haft.embroidery.services.CrossStitchPatternService;
 
 import org.springframework.data.domain.Pageable;
 

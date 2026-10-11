@@ -1,4 +1,4 @@
-package pl.neene.haft.embroideryStorage.exceptions;
+package pl.neene.haft.embroidery.exceptions;
 
 import pl.neene.haft.common.exceptions.UnauthorizedException;
 

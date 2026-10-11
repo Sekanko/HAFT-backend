@@ -1,4 +1,4 @@
-package pl.neene.haft.embroideryStorage.model;
+package pl.neene.haft.embroidery.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;

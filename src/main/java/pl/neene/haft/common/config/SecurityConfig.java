@@ -27,6 +27,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/patterns").permitAll()
                         .requestMatchers("/api/patterns/**").authenticated()
                         .requestMatchers("/api/friend/**").authenticated()
+                        .requestMatchers("/api/users/").permitAll()
+                        .requestMatchers("/api/users/search").permitAll()
                         .requestMatchers("/error").permitAll()
                 )
                 .sessionManagement(session ->

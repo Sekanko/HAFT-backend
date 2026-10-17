@@ -1,6 +1,7 @@
 package pl.neene.haft.users.controllers;
 
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,7 @@ public class NeeNeUserController {
     @GetMapping("/search")
     public ResponseEntity<UsersSliceResponse> search(
             @RequestParam("query") String query,
-            Pageable pageable
+            @ParameterObject Pageable pageable
     ) {
         UsersSliceResponse result = userService.searchUsers(query, pageable);
         return ResponseEntity.status(HttpStatus.OK).body(result);

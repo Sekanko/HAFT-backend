@@ -1,8 +1,12 @@
 package pl.neene.haft.embroidery.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Encoding;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -25,6 +29,11 @@ public class CrossStitchPatternController {
     private final CrossStitchPatternService crossStitchPatternService;
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+        content = @Content(
+            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+            encoding = @Encoding(name = "metadata", contentType = MediaType.APPLICATION_JSON_VALUE)))
+    )
     public ResponseEntity<CreatePatternResponse> createPattern(
             @RequestPart("metadata") @Valid CreatePatternRequest metadata,
             @RequestPart("pattern") MultipartFile pattern,
@@ -67,7 +76,7 @@ public class CrossStitchPatternController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<BasicPatternInfo>> getAllPublicPatterns(Pageable pageable){
+    public ResponseEntity<Page<BasicPatternInfo>> getAllPublicPatterns(@ParameterObject Pageable pageable){
         Page<BasicPatternInfo> patterns = crossStitchPatternService.getPattersPage(pageable);
         return ResponseEntity.status(HttpStatus.OK).body(patterns);
     }

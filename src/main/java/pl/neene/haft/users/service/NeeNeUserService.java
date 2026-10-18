@@ -29,7 +29,7 @@ public class NeeNeUserService {
             return new UserDoesNotExist("User not found");
         });
         String avatarKey = user.getAvatarKey();
-        String avatarUrl = avatarKey != null ? s3Service.generateUrl(avatarKey, true) : null;
+        String avatarUrl = getAvatarUrl(avatarKey);
 
         return new BasicUserInfo(
                 user.getId(),
@@ -54,7 +54,7 @@ public class NeeNeUserService {
         return new UsersSliceResponse(usersInfo, slice.hasNext());
     }
 
-    private String getAvatarUrl(String avatarKey) {
+    public String getAvatarUrl(String avatarKey) {
         return avatarKey != null ? s3Service.generateUrl(avatarKey, true) : null;
     }
 }

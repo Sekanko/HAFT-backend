@@ -5,9 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import pl.neene.haft.users.records.AddFriendRequest;
-import pl.neene.haft.users.records.AddFriendResponse;
-import pl.neene.haft.users.records.FriendshipBodyRequest;
+import pl.neene.haft.users.records.*;
 import pl.neene.haft.users.service.FriendshipService;
 
 import java.util.UUID;
@@ -25,14 +23,20 @@ public class FriendshipController {
     }
 
     @PostMapping("/accept")
-    public ResponseEntity<?> acceptFriendRequest(@AuthenticationPrincipal UUID userId, @RequestBody FriendshipBodyRequest friendshipRequest) {
-        var result = friendshipService.acceptFriendRequest(userId, friendshipRequest.friendshipId());
+    public ResponseEntity<FriendAcceptedResponse> acceptFriendRequest(@AuthenticationPrincipal UUID userId, @RequestBody FriendshipBodyRequest friendshipRequest) {
+        FriendAcceptedResponse result = friendshipService.acceptFriendRequest(userId, friendshipRequest.friendshipId());
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 
     @DeleteMapping("/remove")
-    public ResponseEntity<?> removeFriendRequest(@AuthenticationPrincipal UUID userId, @RequestBody FriendshipBodyRequest friendshipRequest) {
+    public ResponseEntity<Void> removeFriendRequest(@AuthenticationPrincipal UUID userId, @RequestBody FriendshipBodyRequest friendshipRequest) {
         friendshipService.deleteFriendship(userId, friendshipRequest.friendshipId());
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @GetMapping("/list")
+    public ResponseEntity<InvitesAndFriendsResponse> getInviteAndFriendsList(@AuthenticationPrincipal UUID userId){
+        var list = friendshipService.getInviteAndFriendsList(userId);
+        return ResponseEntity.status(HttpStatus.OK).body(list);
     }
 }

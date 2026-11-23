@@ -30,6 +30,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/").permitAll()
                         .requestMatchers("/api/users/search").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/ws", "/ws/**").permitAll()
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)

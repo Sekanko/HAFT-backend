@@ -1,59 +1,37 @@
 package pl.neene.haft.auth.services;
 
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import pl.neene.haft.auth.model.SystemRole;
 
 import java.io.IOException;
-import java.util.Set;
-import java.util.UUID;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
-    private final JwtService jwtService;
+    private final JwtAuthenticationFactory jwtAuthFactory;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (header == null || !header.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        String token = header.substring(7);
-
-        if (token.isBlank()) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         try {
-            Claims claims = jwtService.extractClaims(token);
-            UUID subject = UUID.fromString(claims.getSubject());
-            SystemRole systemRole = SystemRole.valueOf(claims.get("sys_role").toString());
-            Set<GrantedAuthority> authorities = Set.of(new SimpleGrantedAuthority(systemRole.name()));
-            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(subject, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-
+            jwtAuthFactory.fromHeader(header).ifPresent(auth ->
+                SecurityContextHolder.getContext().setAuthentication(auth)
+            );
         } catch (JwtException e) {
-            logger.info("JWT token is invalid:" + e.getMessage());
+            log.info("JWT token is invalid:{}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);
-
     }
 }

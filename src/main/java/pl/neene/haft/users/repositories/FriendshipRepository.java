@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import pl.neene.haft.users.model.Friendship;
+import pl.neene.haft.users.model.FriendshipStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +24,7 @@ public interface FriendshipRepository extends JpaRepository<Friendship, UUID> {
     boolean existsByUsersIds(@Param("sId") UUID senderId, @Param("rId") UUID receiverId);
 
     @Query("""
-        SELECT f 
+        SELECT f
         FROM Friendship f
         JOIN FETCH f.sender
         JOIN FETCH f.receiver
@@ -31,4 +32,12 @@ public interface FriendshipRepository extends JpaRepository<Friendship, UUID> {
         OR (f.sender.id = :userId AND f.status = FriendshipStatus.ACCEPTED)
     """)
     List<Friendship> findInvitesAndFriends(UUID userId);
+
+    @Query("""
+    SELECT COUNT (f) > 0
+    FROM Friendship f
+    WHERE f.status = :starus
+    AND ((f.receiver.id = :a AND f.sender.id = :b) OR (f.receiver.id = :b AND f.sender.id = :a))
+""")
+    boolean existsByUsersIdsAndStatus(@Param("a") UUID userAId, @Param("b") UUID userBId, @Param("status") FriendshipStatus status);
 }

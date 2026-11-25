@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 public class FriendshipService {
     private final FriendshipRepository friendshipRepository;
     private final NeeNeUserRepository neeNeUserRepository;
-    private final NeeNeUserService userService;
 
     public AddFriendResponse createFriendRequest(AddFriendRequest addFriendRequest, UUID senderId) {
         UUID receiverId = addFriendRequest.receiverId();
@@ -88,6 +87,10 @@ public class FriendshipService {
                 usersByFriendshipStatus.get(FriendshipStatus.PENDING),
                 usersByFriendshipStatus.get(FriendshipStatus.ACCEPTED)
         );
+    }
+
+    public boolean areUsersFriends(UUID user1, UUID user2){
+        return friendshipRepository.existsByUsersIdsAndStatus(user1, user2, FriendshipStatus.ACCEPTED);
     }
 
     private FriendshipInfo getFriendshipInfo(Friendship friendship, UUID userId){

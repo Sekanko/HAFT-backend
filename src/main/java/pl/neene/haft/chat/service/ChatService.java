@@ -6,13 +6,17 @@ import org.springframework.stereotype.Service;
 import pl.neene.haft.auth.repositories.NeeNeUserRepository;
 import pl.neene.haft.chat.enums.ChatParticipantRole;
 import pl.neene.haft.chat.enums.ChatRoomType;
+import pl.neene.haft.chat.model.ChatMessage;
 import pl.neene.haft.chat.model.ChatParticipant;
 import pl.neene.haft.chat.model.ChatParticipantId;
 import pl.neene.haft.chat.model.ChatRoom;
+import pl.neene.haft.chat.records.ChatMessageResponse;
 import pl.neene.haft.chat.records.DirectChatResponse;
+import pl.neene.haft.chat.repository.ChatMessageRepository;
 import pl.neene.haft.chat.repository.ChatParticipantRepository;
 import pl.neene.haft.chat.repository.ChatRoomRepository;
 import pl.neene.haft.common.exceptions.UnauthorizedException;
+import pl.neene.haft.common.services.S3Service;
 import pl.neene.haft.users.service.FriendshipService;
 
 import java.time.Instant;
@@ -27,6 +31,8 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final NeeNeUserRepository userRepository;
     private final ChatParticipantRepository participantRepository;
+    private final S3Service s3Service;
+    private final ChatMessageRepository chatMessageRepository;
 
     @Transactional
     public DirectChatResponse createDirect(UUID currentUserId, UUID otherUserId){
@@ -54,6 +60,41 @@ public class ChatService {
 
         return directChatResponseFromChatRoom(chat);
     }
+
+    @Transactional
+    public ChatMessageResponse sendMessage(UUID userId, UUID chatId, String message, byte[] img){
+        //todo custom exceptions
+        if (message == null && img == null) throw new IllegalArgumentException();
+        ChatParticipant participant = participantRepository.findByUser_IdAndChatRoom_Id(userId, chatId).orElseThrow();
+
+        if (message != null) message = message.trim();
+        String imgKey = img == null ? null : "chat/" + chatId + "/" + UUID.randomUUID() + ".png";
+
+        ChatRoom chatRoom = chatRoomRepository.getReferenceById(chatId);
+        ChatMessage chatMessage = chatMessageRepository.saveAndFlush(
+                new ChatMessage()
+                    .setChatRoom(chatRoom)
+                    .setContent(message)
+                    .setSender(participant.getUser())
+                    .setImageKey(imgKey)
+        );
+
+        chatRoomRepository.updateLastMessageAt(chatId, chatMessage.getCreatedAt());
+
+        if (imgKey != null){
+            s3Service.store(img, imgKey, false);
+        }
+
+        return new ChatMessageResponse(
+                chatMessage.getUuid(),
+                chatId,
+                userId,
+                message,
+                s3Service.generateUrl(imgKey, false),
+                chatMessage.getCreatedAt()
+        );
+    }
+
 
     private DirectChatResponse directChatResponseFromChatRoom(ChatRoom chat){
         return new DirectChatResponse(chat.getId(), chat.getType());

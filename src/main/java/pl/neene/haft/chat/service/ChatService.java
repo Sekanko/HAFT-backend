@@ -2,6 +2,9 @@ package pl.neene.haft.chat.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import pl.neene.haft.auth.repositories.NeeNeUserRepository;
 import pl.neene.haft.chat.enums.ChatParticipantRole;
@@ -10,6 +13,7 @@ import pl.neene.haft.chat.model.ChatMessage;
 import pl.neene.haft.chat.model.ChatParticipant;
 import pl.neene.haft.chat.model.ChatParticipantId;
 import pl.neene.haft.chat.model.ChatRoom;
+import pl.neene.haft.chat.records.ChatHistoryResponse;
 import pl.neene.haft.chat.records.ChatMessageResponse;
 import pl.neene.haft.chat.records.DirectChatResponse;
 import pl.neene.haft.chat.repository.ChatMessageRepository;
@@ -85,12 +89,38 @@ public class ChatService {
             s3Service.store(img, imgKey, false);
         }
 
+        return toChatMessageResponse(chatMessage, chatId, userId);
+    }
+
+    public ChatHistoryResponse getHistory(UUID userId, UUID chatId, Instant beforeTime, UUID beforeId, int size) {
+        //todo custom exceptions
+        if (!participantRepository.existsByUser_IdAndChatRoom_Id(userId, chatId))
+            throw new RuntimeException();
+
+        if ((beforeTime == null) != (beforeId == null))
+            throw new RuntimeException("beforeTime and beforeId must be provided together");
+
+        Pageable pageable = PageRequest.of(0, Math.clamp(size, 1, 50));
+        Slice<ChatMessage> sliceMessages = beforeTime == null ?
+                chatMessageRepository.findLatest(chatId, pageable) :
+                chatMessageRepository.findBefore(chatId, beforeTime, beforeId, pageable);
+
+        List<ChatMessageResponse> messages = sliceMessages.getContent()
+                .stream()
+                .map((msg) -> toChatMessageResponse(msg, userId, chatId))
+                .toList();
+
+        return new ChatHistoryResponse(messages, sliceMessages.hasNext());
+    }
+
+    private ChatMessageResponse toChatMessageResponse(ChatMessage chatMessage, UUID chatId, UUID userId){
+        String imgKey = chatMessage.getImageKey();
         return new ChatMessageResponse(
                 chatMessage.getUuid(),
                 chatId,
                 userId,
-                message,
-                s3Service.generateUrl(imgKey, false),
+                chatMessage.getContent(),
+                imgKey == null ? null : s3Service.generateUrl(imgKey, false),
                 chatMessage.getCreatedAt()
         );
     }

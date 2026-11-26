@@ -7,13 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import pl.neene.haft.chat.records.ChatMessageResponse;
-import pl.neene.haft.chat.records.DirectChatRequest;
-import pl.neene.haft.chat.records.DirectChatResponse;
-import pl.neene.haft.chat.records.MessageRequest;
+import pl.neene.haft.chat.records.*;
 import pl.neene.haft.chat.service.ChatService;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.UUID;
 
 @RestController
@@ -47,6 +45,17 @@ public class ChatController {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+    @GetMapping("/{chatId}/messages")
+    public ResponseEntity<ChatHistoryResponse> getChatHistory(
+            @AuthenticationPrincipal UUID userId,
+            @PathVariable UUID chatId,
+            @RequestParam (required = false) Instant beforeTime,
+            @RequestParam (required = false) UUID beforeId,
+            @RequestParam (defaultValue = "30") int size
+    ){
+        ChatHistoryResponse response = chatService.getHistory(userId, chatId, beforeTime, beforeId, size);
+        return ResponseEntity.ok().body(response);
     }
 
 }

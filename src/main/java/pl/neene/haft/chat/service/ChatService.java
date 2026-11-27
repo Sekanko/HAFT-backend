@@ -94,8 +94,7 @@ public class ChatService {
 
     public ChatHistoryResponse getHistory(UUID userId, UUID chatId, Instant beforeTime, UUID beforeId, int size) {
         //todo custom exceptions
-        if (!participantRepository.existsByUser_IdAndChatRoom_Id(userId, chatId))
-            throw new RuntimeException();
+        validateUserChat(userId, chatId);
 
         if ((beforeTime == null) != (beforeId == null))
             throw new RuntimeException("beforeTime and beforeId must be provided together");
@@ -111,6 +110,17 @@ public class ChatService {
                 .toList();
 
         return new ChatHistoryResponse(messages, sliceMessages.hasNext());
+    }
+
+    @Transactional
+    public void markAsRead(UUID userId, UUID chatId) {
+        validateUserChat(userId, chatId);
+        participantRepository.updateLastReadAt(userId, chatId, Instant.now());
+    }
+
+    private void validateUserChat(UUID userId, UUID chatId){
+        if (!participantRepository.existsByUser_IdAndChatRoom_Id(userId, chatId))
+            throw new RuntimeException();
     }
 
     private ChatMessageResponse toChatMessageResponse(ChatMessage chatMessage, UUID chatId, UUID userId){

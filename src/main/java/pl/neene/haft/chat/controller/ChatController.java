@@ -2,6 +2,8 @@ package pl.neene.haft.chat.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,7 +18,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/chat")
+@RequestMapping("/api/chats")
 public class ChatController {
     private ChatService chatService;
 
@@ -65,6 +67,15 @@ public class ChatController {
     ){
         chatService.markAsRead(userId, chatId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<ChatRoomListResponse> getMyChats(
+            @AuthenticationPrincipal UUID userId,
+            @PageableDefault(size = 20) Pageable pageable
+    ){
+        ChatRoomListResponse response = chatService.getMyChats(userId, pageable);
+        return ResponseEntity.ok().body(response);
     }
 
 }

@@ -9,13 +9,8 @@ import org.springframework.stereotype.Service;
 import pl.neene.haft.auth.repositories.NeeNeUserRepository;
 import pl.neene.haft.chat.enums.ChatParticipantRole;
 import pl.neene.haft.chat.enums.ChatRoomType;
-import pl.neene.haft.chat.model.ChatMessage;
-import pl.neene.haft.chat.model.ChatParticipant;
-import pl.neene.haft.chat.model.ChatParticipantId;
-import pl.neene.haft.chat.model.ChatRoom;
-import pl.neene.haft.chat.records.ChatHistoryResponse;
-import pl.neene.haft.chat.records.ChatMessageResponse;
-import pl.neene.haft.chat.records.DirectChatResponse;
+import pl.neene.haft.chat.model.*;
+import pl.neene.haft.chat.records.*;
 import pl.neene.haft.chat.repository.ChatMessageRepository;
 import pl.neene.haft.chat.repository.ChatParticipantRepository;
 import pl.neene.haft.chat.repository.ChatRoomRepository;
@@ -118,6 +113,18 @@ public class ChatService {
         participantRepository.updateLastReadAt(userId, chatId, Instant.now());
     }
 
+    public ChatRoomListResponse getMyChats(UUID userId, Pageable pageable){
+        Slice<MyRoomView> slice = chatRoomRepository.findMyRooms(userId, pageable);
+        return new ChatRoomListResponse(
+                slice.getContent()
+                        .stream()
+                        .map(this::roomViewToRoomSummaryResponse)
+                        .toList(),
+                slice.hasNext()
+        );
+    }
+
+    // Helpers
     private void validateUserChat(UUID userId, UUID chatId){
         if (!participantRepository.existsByUser_IdAndChatRoom_Id(userId, chatId))
             throw new RuntimeException();
@@ -135,6 +142,15 @@ public class ChatService {
         );
     }
 
+    private ChatRoomSummaryResponse roomViewToRoomSummaryResponse(MyRoomView view){
+        return new ChatRoomSummaryResponse(
+                view.getRoomId(),
+                view.getType(),
+                view.getName(),
+                view.getLastMessageAt(),
+                view.getLastReadAt()
+        );
+    }
 
     private DirectChatResponse directChatResponseFromChatRoom(ChatRoom chat){
         return new DirectChatResponse(chat.getId(), chat.getType());

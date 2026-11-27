@@ -35,7 +35,25 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
-                .info(new Info().title("NeeNeApi").version("0.1"))
+                .info(new Info().title("NeeNeApi").version("0.1").description("""
+                ## How chat works
+            
+                - A user connects once over WebSocket and subscribes to their **own** channel:
+                  `/topic/user.{userId}.messages`. Individual conversations are not subscribed to.
+                - Conversations (rooms) and their participants are stored in the database.
+                  Opening a conversation means ordinary REST requests with `{roomId}` in the path.
+                - When someone sends a message (`POST /api/chats/{roomId}/messages`), the server pushes it
+                  to the channel of every participant of the room. The `chatRoomId` field of the message
+                  tells which conversation it belongs to.
+                - After a disconnect, fetch missed messages with `GET /api/chats/{roomId}/messages`.
+            
+                ## WebSocket (STOMP)
+            
+                - Endpoint: `ws://host/ws`
+                - `CONNECT` frame header: `Authorization: Bearer <access token>`
+                - Subscription: `/topic/user.{ownUserId}.messages`
+                - Payload: `ChatMessageResponse`
+                """))
                 .components(new Components().addSecuritySchemes(AUTH_SCHEME,
                         new SecurityScheme()
                         .type(SecurityScheme.Type.OAUTH2)

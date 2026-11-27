@@ -2,6 +2,7 @@ package pl.neene.haft.chat.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -32,6 +33,7 @@ public class ChatService {
     private final ChatParticipantRepository participantRepository;
     private final S3Service s3Service;
     private final ChatMessageRepository chatMessageRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public DirectChatResponse createDirect(UUID currentUserId, UUID otherUserId){
@@ -84,7 +86,10 @@ public class ChatService {
             s3Service.store(img, imgKey, false);
         }
 
-        return toChatMessageResponse(chatMessage, chatId, userId);
+        ChatMessageResponse result = toChatMessageResponse(chatMessage, chatId, userId);
+        applicationEventPublisher.publishEvent(new ChatMessageSentEvent(chatId, result));
+
+        return result;
     }
 
     public ChatHistoryResponse getHistory(UUID userId, UUID chatId, Instant beforeTime, UUID beforeId, int size) {

@@ -10,6 +10,7 @@ import pl.neene.haft.chat.model.ChatParticipantId;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 public interface ChatParticipantRepository extends JpaRepository<ChatParticipant, ChatParticipantId> {
     Optional<ChatParticipant> findByUser_IdAndChatRoom_Id(UUID userId, UUID chatRoomId);
@@ -24,4 +25,7 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
         AND (p.lastReadAt IS NULL OR p.lastReadAt < :time)
         """)
     void updateLastReadAt(@Param("userId") UUID userId, @Param("roomId") UUID roomId, @Param("time") Instant time);
+
+    @Query("SELECT p.user.id FROM ChatParticipant p WHERE p.chatRoom.id = :roomId")
+    List<UUID> findUserIdsByChatRoomId(@Param("roomId") UUID roomId);
 }
